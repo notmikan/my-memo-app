@@ -1,17 +1,13 @@
 <!DOCTYPE html>
-<html lang="ja" prefix="og: http://ogp.me/ns#">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta property="og:title" content="miMemo">
-<meta property="og:description" content="かんたんめも帳。">
-<meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
-<title>miMemo_かんたんめも</title>
+<title>miMemo</title>
 <style>
     :root { --bg:#fff; --bg-side:#f7f9fb; --bg-hover:#eaeef2; --bg-act:#e0e0e0; --txt:#333; --txt-sub:#999; --bd:#e1e4e8; --pin:#ff9800; --danger:#e81123; --overlay:rgba(0,0,0,0.4); }
     [data-theme="dark"] { --bg:#1e1e1e; --bg-side:#252526; --bg-hover:#2d2d2d; --bg-act:#37373d; --txt:#ccc; --txt-sub:#666; --bd:#3e3e42; --pin:#ffb74d; --danger:#ff6b6b; --overlay:rgba(0,0,0,0.6); }
-    body { margin:0; height:100vh; height:100dvh; /* スマホのアドレスバー対策 */ display:flex; font-family:-apple-system, BlinkMacSystemFont, sans-serif; background:var(--bg); color:var(--txt); overflow:hidden; }
+    body { margin:0; height:100vh; display:flex; font-family:-apple-system, BlinkMacSystemFont, sans-serif; background:var(--bg); color:var(--txt); overflow:hidden; }
     * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; transition:background-color .2s, color .2s, border-color .2s; }
     button { cursor:pointer; padding:4px 8px; background:var(--bg); border:1px solid var(--bd); color:var(--txt); border-radius:4px; }
     
@@ -21,15 +17,16 @@
     #search { width:100%; padding:6px; font-size:14px; border:1px solid var(--bd); border-radius:4px; background:var(--bg); color:var(--txt); outline:none; }
     #list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
-    #main { flex:1; display:flex; flex-direction:column; background:var(--bg); min-width:0; position:relative; height:100%; }
-    #toolbar { padding:10px; border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:10px; overflow-x:auto; white-space:nowrap; flex-shrink:0; }
+    #main { flex:1; display:flex; flex-direction:column; background:var(--bg); min-width:0; position:relative; }
+    #toolbar { padding:10px; border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:10px; overflow-x:auto; white-space:nowrap; min-height:50px; }
     #toolbar::-webkit-scrollbar { display:none; }
     #menu-btn { display:none; font-size:20px; border:none; background:transparent; }
+    /* スマホ用タイトル表示 */
+    #mobile-title { display:none; flex:1; text-align:center; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
 
-    /* ★エディタエリアのスクロール改善 */
-    #editor { flex:1; position:relative; overflow-y:auto; /* ここでスクロールさせる */ -webkit-overflow-scrolling:touch; }
-    .view { min-height:100%; outline:none; padding:20px 5% 150px; /* 下部に余白を持たせてキーボード対策 */ }
-    .view.active { display:block; } .view:not(.active) { display:none; }
+    #editor { flex:1; position:relative; overflow:hidden; }
+    .view { width:100%; height:100%; overflow-y:auto; display:none; outline:none; padding:30px 5% 80px; -webkit-overflow-scrolling:touch; }
+    .view.active { display:block; }
     #rich { white-space:pre-wrap; word-break:break-word; line-height:1.7; }
     #rich img { max-width:100%; height:auto; display:block; margin:10px 0; border-radius:4px; }
     
@@ -39,17 +36,21 @@
     .node.folded .bd { width:0; height:0; background:none; border-left:8px solid var(--txt-sub); border-top:5px solid transparent; border-bottom:5px solid transparent; border-radius:0; }
     .ni { flex:1; min-height:1.5em; outline:none; border:none; background:transparent; color:var(--txt); resize:none; font-size:inherit; line-height:1.5; padding:0; }
 
-    /* スマホ用補助ボタン（絶対配置から固定配置へ変更し、キーボードの上に確実に表示） */
-    #mobile-btns { display:none; position:fixed; bottom:20px; right:20px; gap:10px; z-index:100; }
-    .mob-btn { width:42px; height:42px; background:var(--bg); color:var(--txt); border:1px solid var(--bd); border-radius:50%; box-shadow:0 2px 10px rgba(0,0,0,0.2); font-size:20px; display:flex; align-items:center; justify-content:center; opacity:0.95; }
+    /* スマホ用補助ボタン（右上固定） */
+    #mobile-btns { display:none; position:absolute; top:60px; right:10px; flex-direction:column; gap:8px; z-index:50; }
+    .mob-btn { width:36px; height:36px; background:var(--bg); color:var(--txt); border:1px solid var(--bd); border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.1); font-size:16px; display:flex; align-items:center; justify-content:center; opacity:0.7; }
+    .mob-btn:active { opacity:1; background:var(--bg-act); }
 
     @media (max-width: 768px) {
         #menu-btn { display:block; }
+        #mobile-title { display:block; } /* スマホ時のみタイトル表示 */
         #sidebar { position:fixed; top:0; left:0; height:100%; width:80%; max-width:300px; transform:translateX(-100%); box-shadow:2px 0 10px rgba(0,0,0,0.2); }
         #sidebar.show { transform:translateX(0); }
         #overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--overlay); z-index:15; opacity:0; pointer-events:none; transition:opacity .3s; }
         #overlay.show { opacity:1; pointer-events:auto; }
         #mobile-btns.show { display:flex; }
+        /* ツールバーの要素を少し整理 */
+        #toolbar .pc-only { display:none; }
     }
 
     .folder-head { padding:10px; font-weight:bold; display:flex; align-items:center; gap:5px; color:var(--txt-sub); cursor:pointer; }
@@ -57,7 +58,7 @@
     .memo-item.active { background:var(--bg-act); color:var(--txt); font-weight:bold; }
     .memo-item.pinned { border-left:4px solid var(--pin); background:var(--bg-hover); }
     .memo-title { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .menu-trigger { padding:4px 10px; font-size:18px; color:var(--txt-sub); cursor:pointer; }
+    .menu-trigger { padding:4px 8px; font-size:16px; color:var(--txt-sub); cursor:pointer; }
     
     #cm { position:fixed; display:none; z-index:9999; background:var(--bg); border:1px solid var(--bd); box-shadow:0 5px 15px rgba(0,0,0,.3); border-radius:8px; padding:5px 0; min-width:180px; }
     .ci { padding:12px 20px; font-size:16px; display:flex; align-items:center; gap:10px; cursor:pointer; } .ci:active { background:var(--bg-hover); }
@@ -75,26 +76,27 @@
 <main id="main">
     <div id="toolbar">
         <button id="menu-btn">☰</button>
-        <div style="display:flex; align-items:center; gap:5px;"><span style="font-size:12px">文字:</span><input type="range" id="sz" min="1" max="50" value="16" style="width:60px"><span id="szv" style="font-size:12px; min-width:35px">16px</span></div>
-        <span id="cc" style="font-size:12px; color:var(--txt-sub); min-width:50px">0文字</span>
-        <div style="flex:1"></div>
-        <button id="b-bkp">💾</button><button id="b-rst">📂</button><input type="file" id="rst-file" hidden accept=".json">
+        <span id="mobile-title"></span>
+        <div class="pc-only" style="display:flex; align-items:center; gap:5px;"><span style="font-size:12px">文字:</span><input type="range" id="sz" min="1" max="50" value="16" style="width:60px"><span id="szv" style="font-size:12px; min-width:35px">16px</span></div>
+        <span id="cc" class="pc-only" style="font-size:12px; color:var(--txt-sub); min-width:50px">0文字</span>
+        <div style="flex:1" class="pc-only"></div>
+        <button id="b-bkp" class="pc-only">💾</button><button id="b-rst" class="pc-only">📂</button><input type="file" id="rst-file" hidden accept=".json">
         <button id="b-thm">🌓</button>
     </div>
     <div id="editor">
         <div id="rich" class="view" contenteditable="true"></div><div id="out" class="view"></div>
-    </div>
-    <div id="mobile-btns">
-        <button class="mob-btn" id="mb-left">←</button>
-        <button class="mob-btn" id="mb-right">→</button>
-        <button class="mob-btn" id="mb-enter">↲</button>
+        <div id="mobile-btns">
+            <button class="mob-btn" id="mb-left">←</button>
+            <button class="mob-btn" id="mb-right">→</button>
+            <button class="mob-btn" id="mb-enter">↲</button>
+        </div>
     </div>
 </main>
 <div id="cm"><div class="ci" id="cm-ren">✏️ 名前変更</div><div class="ci" id="cm-pin">📌 ピン留め</div><div style="height:1px;background:var(--bd);margin:5px 0"></div><div class="ci" id="cm-del" style="color:var(--danger)">🗑️ 削除</div></div>
 
 <script>
 let D={memos:[],folders:[{id:'f1',name:'メイン',folded:false}],cur:null,cfg:{fs:16,th:'light'}}, ctx={id:null,type:null}, srch='', curIdx=-1;
-const KEY='mi_memo_data', E={r:document.getElementById('rich'),o:document.getElementById('out'),l:document.getElementById('list'),cm:document.getElementById('cm'),cc:document.getElementById('cc'),sb:document.getElementById('sidebar'),ov:document.getElementById('overlay'),mb:document.getElementById('mobile-btns'),szv:document.getElementById('szv'),ed:document.getElementById('editor')};
+const KEY='mi_memo_data', E={r:document.getElementById('rich'),o:document.getElementById('out'),l:document.getElementById('list'),cm:document.getElementById('cm'),cc:document.getElementById('cc'),sb:document.getElementById('sidebar'),ov:document.getElementById('overlay'),mb:document.getElementById('mobile-btns'),szv:document.getElementById('szv'),mt:document.getElementById('mobile-title')};
 function sv(){try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){alert('容量オーバー');}}
 function ld(){const d=localStorage.getItem(KEY);if(d){D=JSON.parse(d);if(!D.folders)D.folders=[{id:'f1',name:'メイン',folded:false}];D.memos.forEach(m=>{if(!m.fid)m.fid='f1';});}else{cm('rich',true);}rd();op(D.cur||D.memos[0]?.id);ac();}
 function tm(show){const is=show!==undefined?show:!E.sb.classList.contains('show');E.sb.classList.toggle('show',is);E.ov.classList.toggle('show',is);}
@@ -103,7 +105,8 @@ function cm(t,ini=false){const id=Date.now(),fid=D.folders.find(f=>!f.folded)?.i
 function cf(){const n=prompt('フォルダ名:');if(n){D.folders.push({id:'f'+Date.now(),name:n,folded:false});sv();rd();}}
 function dm(id){if(!confirm('削除OK？'))return;D.memos=D.memos.filter(m=>m.id!==id);if(D.cur===id)op(D.memos[0]?.id);sv();rd();}
 function df(id){if(D.folders.length<=1)return;if(!confirm('フォルダを削除しますか？'))return;D.memos=D.memos.filter(m=>m.fid!==id);D.folders=D.folders.filter(f=>f.id!==id);if(!D.memos.find(m=>m.id===D.cur))op(D.memos[0]?.id);sv();rd();}
-function op(id){D.cur=id;const m=D.memos.find(x=>x.id===id);if(!m){E.r.classList.remove('active');E.o.classList.remove('active');uc(0);return;}
+function op(id){D.cur=id;const m=D.memos.find(x=>x.id===id);if(!m){E.r.classList.remove('active');E.o.classList.remove('active');uc(0);E.mt.textContent='';return;}
+    E.mt.textContent=m.title; // スマホ用タイトル更新
     if(m.type==='rich'){E.r.classList.add('active');E.o.classList.remove('active');E.mb.classList.remove('show');E.r.innerHTML=m.html||'';uc(E.r.innerText.replace(/\n/g,'').length);}
     else{E.r.classList.remove('active');E.o.classList.add('active');E.mb.classList.add('show');ro();uc(m.nodes.reduce((a,b)=>a+b.text.length,0));}
     if(window.innerWidth<=768)tm(false); rd();}
@@ -117,7 +120,6 @@ function rd(){E.l.innerHTML='';
         const fh=fd.querySelector('.folder-head');
         fh.onclick=(e)=>{if(!e.target.classList.contains('menu-trigger')){f.folded=!f.folded;sv();rd();}};
         fh.querySelector('.menu-trigger').onclick=(e)=>{e.stopPropagation();ctx={id:f.id,type:'folder'};shwCm(e);};
-        fh.oncontextmenu=(e)=>{e.preventDefault();ctx={id:f.id,type:'folder'};shwCm(e);};
         if(!f.folded){D.memos.filter(m=>m.fid===f.id).sort((a,b)=>b.pin-a.pin).forEach(m=>fd.appendChild(rm(m)));}
         E.l.appendChild(fd);
     });}
@@ -126,14 +128,13 @@ function rm(m){const li=document.createElement('div');li.className=`memo-item ${
     li.innerHTML=`<span>${m.type==='rich'?'📄':'🌳'}</span><span class="memo-title">${m.pin?'📌':''}${esc(m.title)}</span><span class="menu-trigger">︙</span>`;
     li.onclick=(e)=>{if(!e.target.classList.contains('menu-trigger'))op(m.id);};
     li.querySelector('.menu-trigger').onclick=(e)=>{e.stopPropagation();ctx={id:m.id,type:'memo'};shwCm(e);};
-    li.oncontextmenu=(e)=>{e.preventDefault();ctx={id:m.id,type:'memo'};shwCm(e);};
     return li;}
-function shwCm(e){let x=e.clientX!==undefined?e.clientX:e.pageX,y=e.clientY!==undefined?e.clientY:e.pageY;if(x+180>window.innerWidth)x=window.innerWidth-190;if(y+150>window.innerHeight)y=window.innerHeight-160;E.cm.style.display='block';E.cm.style.left=x+'px';E.cm.style.top=y+'px';}
+function shwCm(e){let x=e.clientX!==undefined?e.clientX:e.pageX, y=e.clientY!==undefined?e.clientY:e.pageY;if(x+180>window.innerWidth)x=window.innerWidth-190;if(y+150>window.innerHeight)y=window.innerHeight-160;E.cm.style.display='block';E.cm.style.left=x+'px';E.cm.style.top=y+'px';}
 
 document.onclick=(e)=>{if(!e.target.closest('#cm')&&!e.target.classList.contains('menu-trigger'))E.cm.style.display='none';};
 document.getElementById('menu-btn').onclick=()=>tm(true); E.ov.onclick=()=>tm(false);
 document.getElementById('search').oninput=(e)=>{srch=e.target.value;rd();}
-document.getElementById('cm-ren').onclick=()=>{const t=ctx.type==='memo'?D.memos.find(x=>x.id===ctx.id):D.folders.find(x=>x.id===ctx.id);const n=prompt('名前:',t.title||t.name);if(n){if(ctx.type==='memo')t.title=n;else t.name=n;sv();rd();E.cm.style.display='none';}}
+document.getElementById('cm-ren').onclick=()=>{const t=ctx.type==='memo'?D.memos.find(x=>x.id===ctx.id):D.folders.find(x=>x.id===ctx.id);const n=prompt('名前:',t.title||t.name);if(n){if(ctx.type==='memo')t.title=n;else t.name=n;sv();rd();op(D.cur);E.cm.style.display='none';}}
 document.getElementById('cm-pin').onclick=()=>{const m=D.memos.find(x=>x.id===ctx.id);if(m){m.pin=!m.pin;sv();rd();}E.cm.style.display='none';}
 document.getElementById('cm-del').onclick=()=>{if(ctx.type==='memo')dm(ctx.id);else df(ctx.id);E.cm.style.display='none';}
 document.getElementById('bn-rich').onclick=()=>cm('rich'); document.getElementById('bn-out').onclick=()=>cm('outline'); document.getElementById('bn-fol').onclick=cf;
@@ -146,15 +147,24 @@ document.getElementById('rst-file').onchange=(e)=>{const f=e.target.files[0];if(
 E.r.addEventListener('input',()=>{const m=D.memos.find(x=>x.id===D.cur);if(m&&m.type==='rich'){m.html=E.r.innerHTML;uc(E.r.innerText.replace(/\n/g,'').length);sv();}});
 function ro(){const m=D.memos.find(x=>x.id===D.cur);if(!m||m.type!=='outline')return;E.o.innerHTML='';let sk=-1;m.nodes.forEach((n,i)=>{if(sk!==-1){if(n.level>sk)return;sk=-1;}const d=document.createElement('div');d.className='node'+(n.folded?' folded':'');d.style.paddingLeft=(n.level*20)+'px';d.innerHTML=`<div class="nb"><div class="bd"></div></div><textarea class="ni" rows="1" data-idx="${i}"></textarea>`;d.querySelector('.nb').onclick=()=>{const nx=m.nodes[i+1];if(nx&&nx.level>n.level){n.folded=!n.folded;sv();ro();}};
     const inp=d.querySelector('.ni');inp.value=n.text;
-    inp.onfocus=()=>{curIdx=i; setTimeout(()=>{inp.scrollIntoView({block:'nearest',behavior:'smooth'});},300);} // ★フォーカス時にスクロール
+    inp.onfocus=()=>{curIdx=i;}
     inp.oninput=()=>{n.text=inp.value;ah(inp);sv();uc(m.nodes.reduce((a,b)=>a+b.text.length,0));};
     inp.addEventListener('beforeinput', (e) => hbi(e, i, n, m));
     inp.onkeydown=(e)=>hk(e,i,n,m);
     E.o.appendChild(d);ah(inp);if(n.folded)sk=n.level;});}
 function ah(e){e.style.height='auto';e.style.height=e.scrollHeight+'px';}
-function hbi(e,i,n,m){
-    if(e.inputType==='insertParagraph'||e.inputType==='insertLineBreak'){e.preventDefault();m.nodes.splice(i+1,0,{id:Date.now()+'',text:'',level:n.level,folded:false});sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[i+1]?.focus(),0);}
-    if(e.inputType==='deleteContentBackward'&&e.target.selectionStart===0&&i>0){e.preventDefault();const p=m.nodes[i-1],l=p.text.length;p.text+=n.text;m.nodes.splice(i,1);sv();ro();setTimeout(()=>{const el=E.o.querySelectorAll('.ni')[i-1];el?.focus();el?.setSelectionRange(l,l);},0);}
+
+function hbi(e, i, n, m) {
+    if (e.inputType === 'deleteContentBackward' && e.target.selectionStart === 0 && i > 0) {
+        e.preventDefault();
+        const p=m.nodes[i-1],l=p.text.length;p.text+=n.text;m.nodes.splice(i,1);
+        sv();ro();setTimeout(()=>{const el=E.o.querySelectorAll('.ni')[i-1];el?.focus();el?.setSelectionRange(l,l);},0);
+    }
+    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
+        e.preventDefault();
+        m.nodes.splice(i+1,0,{id:Date.now()+'',text:'',level:n.level,folded:false});
+        sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[i+1]?.focus(),0);
+    }
 }
 function hk(e,i,n,m){
     if(e.key==='Tab'){e.preventDefault();if(e.shiftKey){if(n.level>0)n.level--;}else{if(i>0&&n.level<=m.nodes[i-1].level)n.level++;}sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[i]?.focus(),0);}
@@ -162,9 +172,10 @@ function hk(e,i,n,m){
     if(e.key==='Backspace'&&e.target.selectionStart===0&&i>0){e.preventDefault();const p=m.nodes[i-1],l=p.text.length;p.text+=n.text;m.nodes.splice(i,1);sv();ro();setTimeout(()=>{const el=E.o.querySelectorAll('.ni')[i-1];el?.focus();el?.setSelectionRange(l,l);},0);}
 }
 
-document.getElementById('mb-enter').onclick=(e)=>{e.preventDefault();if(curIdx!==-1)hbi({inputType:'insertParagraph',preventDefault:()=>{}},curIdx,D.memos.find(x=>x.id===D.cur).nodes[curIdx],D.memos.find(x=>x.id===D.cur));};
+document.getElementById('mb-enter').onclick=(e)=>{e.preventDefault();if(curIdx!==-1)hbi({inputType:'insertParagraph',preventDefault:()=>{},target:{selectionStart:0}},curIdx,D.memos.find(x=>x.id===D.cur).nodes[curIdx],D.memos.find(x=>x.id===D.cur));};
 document.getElementById('mb-right').onclick=(e)=>{e.preventDefault();if(curIdx!==-1){const m=D.memos.find(x=>x.id===D.cur),n=m.nodes[curIdx];if(curIdx>0&&n.level<=m.nodes[curIdx-1].level)n.level++;sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[curIdx]?.focus(),0);}};
 document.getElementById('mb-left').onclick=(e)=>{e.preventDefault();if(curIdx!==-1){const m=D.memos.find(x=>x.id===D.cur),n=m.nodes[curIdx];if(n.level>0)n.level--;sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[curIdx]?.focus(),0);}};
+
 function ac(){document.documentElement.setAttribute('data-theme',D.cfg.th);E.r.style.fontSize=E.o.style.fontSize=D.cfg.fs+'px';E.szv.textContent=D.cfg.fs+'px';}
 function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 ld();
