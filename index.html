@@ -3,182 +3,169 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>Perfect Dual Memo v18</title>
+<title>miMemo</title>
 <style>
-    :root { --bg-main:#fff; --bg-sidebar:#f7f9fb; --bg-hover:#eaeef2; --bg-active:#e0e0e0; --text:#333; --text-sec:#999; --border:#e1e4e8; --pin:#ff9800; --danger:#e81123; --overlay:rgba(0,0,0,0.4); }
-    [data-theme="dark"] { --bg-main:#1e1e1e; --bg-sidebar:#252526; --bg-hover:#2d2d2d; --bg-active:#37373d; --text:#ccc; --text-sec:#666; --border:#3e3e42; --pin:#ffb74d; --danger:#ff6b6b; --overlay:rgba(0,0,0,0.6); }
-    body { margin:0; height:100vh; display:flex; font-family:-apple-system, BlinkMacSystemFont, sans-serif; background:var(--bg-main); color:var(--text); overflow:hidden; }
-    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
-    button { cursor:pointer; padding:4px 8px; background:var(--bg-main); border:1px solid var(--border); color:var(--text); border-radius:4px; }
-    input, textarea, .ev { transition: background-color .3s, color .3s, border-color .3s; }
-
-    /* --- サイドバー (PCデフォルト) --- */
-    #sidebar { width:260px; min-width:260px; background:var(--bg-sidebar); border-right:1px solid var(--border); display:flex; flex-direction:column; z-index:20; transition: transform .3s ease; }
-    .sb-header { padding:10px; border-bottom:1px solid var(--border); display:flex; flex-direction:column; gap:8px; }
-    .sb-btns { display:flex; gap:5px; } .sb-btns button { flex:1; font-size:12px; padding:6px 2px; }
-    #search-box { width:100%; padding:6px; font-size:14px; border:1px solid var(--border); border-radius:4px; background:var(--bg-main); color:var(--text); outline:none; }
-    #memo-list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
-
-    /* --- メインエリア --- */
-    #main { flex:1; display:flex; flex-direction:column; background:var(--bg-main); min-width:0; position:relative; }
-    #toolbar { padding:10px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; overflow-x:auto; white-space:nowrap; }
-    #toolbar::-webkit-scrollbar { display:none; } /* ツールバーのスクロールバーを隠す */
+    :root { --bg:#fff; --bg-side:#f7f9fb; --bg-hover:#eaeef2; --bg-act:#e0e0e0; --txt:#333; --txt-sub:#999; --bd:#e1e4e8; --pin:#ff9800; --danger:#e81123; --overlay:rgba(0,0,0,0.4); }
+    [data-theme="dark"] { --bg:#1e1e1e; --bg-side:#252526; --bg-hover:#2d2d2d; --bg-act:#37373d; --txt:#ccc; --txt-sub:#666; --bd:#3e3e42; --pin:#ffb74d; --danger:#ff6b6b; --overlay:rgba(0,0,0,0.6); }
+    body { margin:0; height:100vh; display:flex; font-family:-apple-system, BlinkMacSystemFont, sans-serif; background:var(--bg); color:var(--txt); overflow:hidden; }
+    * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; transition:background-color .2s, color .2s, border-color .2s; }
+    button { cursor:pointer; padding:4px 8px; background:var(--bg); border:1px solid var(--bd); color:var(--txt); border-radius:4px; }
     
-    /* ハンバーガーボタン (スマホのみ表示) */
-    #menu-btn { display:none; font-size:20px; padding:4px 8px; border:none; background:transparent; }
+    #sidebar { width:260px; min-width:260px; background:var(--bg-side); border-right:1px solid var(--bd); display:flex; flex-direction:column; z-index:20; transition:transform .3s ease; }
+    .sb-head { padding:10px; border-bottom:1px solid var(--bd); display:flex; flex-direction:column; gap:8px; }
+    .sb-btns { display:flex; gap:5px; } .sb-btns button { flex:1; font-size:12px; padding:6px 2px; }
+    #search { width:100%; padding:6px; font-size:14px; border:1px solid var(--bd); border-radius:4px; background:var(--bg); color:var(--txt); outline:none; }
+    #list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
-    /* --- エディタ --- */
-    #editor-container { flex:1; position:relative; overflow:hidden; }
-    .ev { width:100%; height:100%; overflow-y:auto; display:none; outline:none; padding:30px 5% 50px; -webkit-overflow-scrolling:touch; }
-    .ev.active { display:block; }
+    #main { flex:1; display:flex; flex-direction:column; background:var(--bg); min-width:0; position:relative; }
+    #toolbar { padding:10px; border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:10px; overflow-x:auto; white-space:nowrap; }
+    #toolbar::-webkit-scrollbar { display:none; }
+    #menu-btn { display:none; font-size:20px; border:none; background:transparent; }
+
+    #editor { flex:1; position:relative; overflow:hidden; }
+    .view { width:100%; height:100%; overflow-y:auto; display:none; outline:none; padding:30px 5% 80px; -webkit-overflow-scrolling:touch; }
+    .view.active { display:block; }
     #rich { white-space:pre-wrap; word-break:break-word; line-height:1.7; }
     #rich img { max-width:100%; height:auto; display:block; margin:10px 0; border-radius:4px; }
-    .node { display:flex; margin-bottom:4px; }
-    .nb { width:30px; height:30px; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
-    .bd { width:8px; height:8px; background:var(--text-sec); border-radius:50%; }
-    .node.folded .bd { width:0; height:0; background:none; border-left:8px solid var(--text-sec); border-top:5px solid transparent; border-bottom:5px solid transparent; border-radius:0; }
-    .ni { flex:1; min-height:30px; outline:none; border:none; background:transparent; color:var(--text); resize:none; font-size:inherit; line-height:1.5; padding:4px 0; }
+    
+    .node { display:flex; align-items:baseline; margin-bottom:4px; }
+    .nb { width:30px; height:1.5em; flex-shrink:0; display:flex; align-items:center; justify-content:center; transform:translateY(2px); }
+    .bd { width:8px; height:8px; background:var(--txt-sub); border-radius:50%; }
+    .node.folded .bd { width:0; height:0; background:none; border-left:8px solid var(--txt-sub); border-top:5px solid transparent; border-bottom:5px solid transparent; border-radius:0; }
+    .ni { flex:1; min-height:1.5em; outline:none; border:none; background:transparent; color:var(--txt); resize:none; font-size:inherit; line-height:1.5; padding:0; }
 
-    /* --- スマホ用レスポンシブ設定 (幅768px以下) --- */
+    #mobile-btns { display:none; position:fixed; bottom:20px; right:20px; gap:10px; z-index:50; }
+    .mob-btn { width:45px; height:45px; background:var(--bg-act); color:var(--txt); border:1px solid var(--bd); border-radius:50%; box-shadow:0 4px 10px rgba(0,0,0,0.2); font-size:20px; display:flex; align-items:center; justify-content:center; }
+    .mob-btn:active { transform:scale(0.95); background:var(--bd); }
+
     @media (max-width: 768px) {
-        #menu-btn { display:block; } /* メニューボタンを表示 */
-        #sidebar {
-            position:fixed; top:0; left:0; height:100%; width:80%; max-width:300px;
-            transform: translateX(-100%); /* 初期状態は画面外へ隠す */
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
-        }
-        #sidebar.show { transform: translateX(0); } /* .showがつくと出てくる */
-        
-        /* サイドバーが開いている時の背景を暗くするオーバーレイ */
-        #overlay {
-            position:fixed; top:0; left:0; width:100%; height:100%;
-            background:var(--overlay); z-index:15; opacity:0; pointer-events:none; transition: opacity .3s;
-        }
+        #menu-btn { display:block; }
+        #sidebar { position:fixed; top:0; left:0; height:100%; width:80%; max-width:300px; transform:translateX(-100%); box-shadow:2px 0 10px rgba(0,0,0,0.2); }
+        #sidebar.show { transform:translateX(0); }
+        #overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--overlay); z-index:15; opacity:0; pointer-events:none; transition:opacity .3s; }
         #overlay.show { opacity:1; pointer-events:auto; }
+        #mobile-btns.show { display:flex; }
     }
 
-    /* --- その他UIパーツ --- */
-    .folder-header { padding:10px; font-weight:bold; display:flex; align-items:center; gap:5px; color:var(--text-sec); }
-    .memo-item { padding:12px 10px 12px 15px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; color:var(--text-sec); }
-    .memo-item.active { background:var(--bg-active); color:var(--text); font-weight:bold; }
+    .folder-head { padding:10px; font-weight:bold; display:flex; align-items:center; gap:5px; color:var(--txt-sub); }
+    .memo-item { padding:12px 10px 12px 15px; border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:8px; color:var(--txt-sub); }
+    .memo-item.active { background:var(--bg-act); color:var(--txt); font-weight:bold; }
     .memo-item.pinned { border-left:4px solid var(--pin); background:var(--bg-hover); }
     .memo-title { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-    .item-btns { margin-left:auto; display:flex; gap:10px; } /* スマホで押しやすいように少し広げる */
     
-    #cm { position:fixed; display:none; z-index:9999; background:var(--bg-main); border:1px solid var(--border); box-shadow:0 5px 15px rgba(0,0,0,.3); border-radius:8px; padding:5px 0; min-width:180px; }
-    .ci { padding:12px 20px; font-size:16px; display:flex; align-items:center; gap:10px; } 
-    .ci:active { background:var(--bg-hover); }
+    #cm { position:fixed; display:none; z-index:9999; background:var(--bg); border:1px solid var(--bd); box-shadow:0 5px 15px rgba(0,0,0,.3); border-radius:8px; padding:5px 0; min-width:180px; }
+    .ci { padding:12px 20px; font-size:16px; display:flex; align-items:center; gap:10px; } .ci:active { background:var(--bg-hover); }
 </style>
 </head>
 <body>
 <div id="overlay"></div>
-
 <nav id="sidebar">
-    <div class="sb-header">
+    <div class="sb-head">
         <div class="sb-btns"><button id="bn-rich">📄 メモ</button><button id="bn-out">🌳 アウトライン</button><button id="bn-fol">📁+</button></div>
-        <input type="search" id="search-box" placeholder="🔍 検索...">
+        <input type="search" id="search" placeholder="🔍 検索...">
     </div>
-    <div id="memo-list"></div>
+    <div id="list"></div>
 </nav>
-
 <main id="main">
     <div id="toolbar">
-        <button id="menu-btn">☰</button> <div style="display:flex; align-items:center; gap:5px;"><span style="font-size:12px">文字:</span><input type="range" id="sz" min="12" max="30" value="16" style="width:60px"></div>
-        <span id="cc" style="font-size:12px; color:var(--text-sec); min-width:40px">0字</span>
+        <button id="menu-btn">☰</button>
+        <div style="display:flex; align-items:center; gap:5px;"><span style="font-size:12px">文字:</span><input type="range" id="sz" min="1" max="50" value="16" style="width:60px"><span id="szv" style="font-size:12px; min-width:35px">16px</span></div>
+        <span id="cc" style="font-size:12px; color:var(--txt-sub); min-width:50px">0文字</span>
         <div style="flex:1"></div>
         <button id="b-bkp">💾</button><button id="b-rst">📂</button><input type="file" id="rst-file" hidden accept=".json">
         <button id="b-thm">🌓</button>
     </div>
-    <div id="editor-container">
-        <div id="rich" class="ev" contenteditable="true"></div><div id="out" class="ev"></div>
+    <div id="editor">
+        <div id="rich" class="view" contenteditable="true"></div><div id="out" class="view"></div>
+    </div>
+    <div id="mobile-btns">
+        <button class="mob-btn" id="mb-left">←</button>
+        <button class="mob-btn" id="mb-right">→</button>
+        <button class="mob-btn" id="mb-enter">↲</button>
     </div>
 </main>
-
-<div id="cm"><div class="ci" id="cm-ren">✏️ 名前変更</div><div class="ci" id="cm-pin">📌 ピン留め</div><div style="height:1px;background:var(--border);margin:5px 0"></div><div class="ci" id="cm-del" style="color:var(--danger)">🗑️ 削除</div></div>
+<div id="cm"><div class="ci" id="cm-ren">✏️ 名前変更</div><div class="ci" id="cm-pin">📌 ピン留め</div><div style="height:1px;background:var(--bd);margin:5px 0"></div><div class="ci" id="cm-del" style="color:var(--danger)">🗑️ 削除</div></div>
 
 <script>
-let D={memos:[],folders:[{id:'f1',name:'メイン',folded:false}],cur:null,cfg:{fs:16,th:'light'}}, drg={id:null,type:null}, ctx={id:null,type:null}, srch='';
-const K='pdm_v18', E={r:document.getElementById('rich'),o:document.getElementById('out'),l:document.getElementById('memo-list'),cm:document.getElementById('cm'),cc:document.getElementById('cc'),sb:document.getElementById('sidebar'),ov:document.getElementById('overlay')};
-function sv(){try{localStorage.setItem(K,JSON.stringify(D));}catch(e){alert('容量オーバー');}}
-function ld(){const d=localStorage.getItem(K);if(d){D=JSON.parse(d);if(!D.folders)D.folders=[{id:'f1',name:'メイン',folded:false}];D.memos.forEach(m=>{if(!m.fid)m.fid='f1';});}else{cm('rich',true);}rd();op(D.cur||D.memos[0]?.id);ac();}
+let D={memos:[],folders:[{id:'f1',name:'メイン',folded:false}],cur:null,cfg:{fs:16,th:'light'}}, ctx={id:null,type:null}, srch='', curIdx=-1;
+const KEY='mi_memo_data', E={r:document.getElementById('rich'),o:document.getElementById('out'),l:document.getElementById('list'),cm:document.getElementById('cm'),cc:document.getElementById('cc'),sb:document.getElementById('sidebar'),ov:document.getElementById('overlay'),mb:document.getElementById('mobile-btns'),szv:document.getElementById('szv')};
+function sv(){try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){alert('容量オーバー');}}
+function ld(){const d=localStorage.getItem(KEY);if(d){D=JSON.parse(d);if(!D.folders)D.folders=[{id:'f1',name:'メイン',folded:false}];D.memos.forEach(m=>{if(!m.fid)m.fid='f1';});}else{cm('rich',true);}rd();op(D.cur||D.memos[0]?.id);ac();}
+function tm(show){const is=show!==undefined?show:!E.sb.classList.contains('show');E.sb.classList.toggle('show',is);E.ov.classList.toggle('show',is);}
 
-// --- スマホ用メニュー開閉 ---
-function toggleMenu(show) {
-    const isShow = show !== undefined ? show : !E.sb.classList.contains('show');
-    E.sb.classList.toggle('show', isShow); E.ov.classList.toggle('show', isShow);
-}
-document.getElementById('menu-btn').onclick = () => toggleMenu(true);
-E.ov.onclick = () => toggleMenu(false);
-
-// --- 基本機能 ---
-function cm(t,ini=false){const id=Date.now(),fid=D.folders.find(f=>!f.folded)?.id||D.folders[0].id;D.memos.unshift({id,type:t,title:'新規'+(t==='rich'?'メモ':'アウトライン'),html:'',nodes:t==='outline'?[{id:id+'-1',text:'',level:0,folded:false}]:undefined,pin:false,fid});if(!ini){op(id);srch='';document.getElementById('search-box').value='';sv();rd();}}
+function cm(t,ini=false){const id=Date.now(),fid=D.folders.find(f=>!f.folded)?.id||D.folders[0].id;D.memos.unshift({id,type:t,title:'新規'+(t==='rich'?'メモ':'アウトライン'),html:'',nodes:t==='outline'?[{id:id+'-1',text:'',level:0,folded:false}]:undefined,pin:false,fid});if(!ini){op(id);srch='';document.getElementById('search').value='';sv();rd();}}
 function cf(){const n=prompt('フォルダ名:');if(n){D.folders.push({id:'f'+Date.now(),name:n,folded:false});sv();rd();}}
 function dm(id){if(!confirm('削除OK？'))return;D.memos=D.memos.filter(m=>m.id!==id);if(D.cur===id)op(D.memos[0]?.id);sv();rd();}
 function df(id){if(D.folders.length<=1)return;if(!confirm('フォルダを削除しますか？'))return;D.memos=D.memos.filter(m=>m.fid!==id);D.folders=D.folders.filter(f=>f.id!==id);if(!D.memos.find(m=>m.id===D.cur))op(D.memos[0]?.id);sv();rd();}
 function op(id){D.cur=id;const m=D.memos.find(x=>x.id===id);if(!m){E.r.classList.remove('active');E.o.classList.remove('active');uc(0);return;}
-    if(m.type==='rich'){E.r.classList.add('active');E.o.classList.remove('active');E.r.innerHTML=m.html||'';uc(E.r.innerText.replace(/\n/g,'').length);}
-    else{E.r.classList.remove('active');E.o.classList.add('active');ro();uc(m.nodes.reduce((a,b)=>a+b.text.length,0));}
-    if(window.innerWidth<=768) toggleMenu(false); // スマホならメニューを閉じる
-    rd();}
-function uc(n){E.cc.textContent=n;}
+    if(m.type==='rich'){E.r.classList.add('active');E.o.classList.remove('active');E.mb.classList.remove('show');E.r.innerHTML=m.html||'';uc(E.r.innerText.replace(/\n/g,'').length);}
+    else{E.r.classList.remove('active');E.o.classList.add('active');E.mb.classList.add('show');ro();uc(m.nodes.reduce((a,b)=>a+b.text.length,0));}
+    if(window.innerWidth<=768)tm(false); rd();}
+function uc(n){E.cc.textContent=n+'文字';}
 
-function rd(){ // Render
-    E.l.innerHTML='';
-    if(srch){
-        D.memos.filter(m=>(m.title+m.html+(m.nodes?m.nodes.map(n=>n.text).join(' '):'')).toLowerCase().includes(srch.toLowerCase()))
-         .forEach(m=>E.l.appendChild(rm(m)));
-    }else{
-        D.folders.forEach(f=>{
-            const fd=document.createElement('div'); fd.className='folder-item';
-            fd.innerHTML=`<div class="folder-header"><span>${f.folded?'▶':'▼'}</span>📁 ${esc(f.name)}</div>`;
-            const fh=fd.querySelector('.folder-header');
-            fh.onclick=()=>{f.folded=!f.folded;sv();rd();}
-            fh.oncontextmenu=(e)=>{e.preventDefault();ctx={id:f.id,type:'folder'};shwCm(e);}
-            // Folder D&D
-            fh.ondragover=(e)=>{e.preventDefault();e.dataTransfer.dropEffect='move';fh.style.background='var(--bg-active)';}
-            fh.ondragleave=()=>{fh.style.background='';}
-            fh.ondrop=(e)=>{e.preventDefault();fh.style.background='';if(drg.type==='memo'){const m=D.memos.find(x=>x.id===drg.id);m.fid=f.id;sv();rd();}}
+function rd(){E.l.innerHTML='';
+    if(srch){D.memos.filter(m=>(m.title+m.html+(m.nodes?m.nodes.map(n=>n.text).join(' '):'')).toLowerCase().includes(srch.toLowerCase())).forEach(m=>E.l.appendChild(rm(m)));}
+    else{D.folders.forEach(f=>{
+        const fd=document.createElement('div');
+        fd.innerHTML=`<div class="folder-head"><span>${f.folded?'▶':'▼'}</span>📁 ${esc(f.name)}</div>`;
+        fd.querySelector('.folder-head').onclick=()=>{f.folded=!f.folded;sv();rd();};
+        fd.querySelector('.folder-head').oncontextmenu=(e)=>{e.preventDefault();ctx={id:f.id,type:'folder'};shwCm(e);};
+        if(!f.folded){D.memos.filter(m=>m.fid===f.id).sort((a,b)=>b.pin-a.pin).forEach(m=>fd.appendChild(rm(m)));}
+        E.l.appendChild(fd);
+    });}
+}
+function rm(m){const li=document.createElement('div');li.className=`memo-item ${m.id===D.cur?'active':''} ${m.pin?'pinned':''}`;
+    li.innerHTML=`<span>${m.type==='rich'?'📄':'🌳'}</span><span class="memo-title">${m.pin?'📌':''}${esc(m.title)}</span>`;
+    li.onclick=()=>op(m.id); li.oncontextmenu=(e)=>{e.preventDefault();ctx={id:m.id,type:'memo'};shwCm(e);};
+    return li;}
+function shwCm(e){let x=e.pageX,y=e.pageY;if(x+180>window.innerWidth)x=window.innerWidth-190;E.cm.style.display='block';E.cm.style.left=x+'px';E.cm.style.top=y+'px';}
 
-            if(!f.folded){
-                D.memos.filter(m=>m.fid===f.id).sort((a,b)=>b.pin-a.pin).forEach(m=>fd.appendChild(rm(m)));
-            }
-            E.l.appendChild(fd);
-        });
-    }
-}
-function rm(m){ // Render Memo
-    const li=document.createElement('div'); li.className=`memo-item ${m.id===D.cur?'active':''} ${m.pin?'pinned':''}`;
-    li.draggable=true; li.innerHTML=`<span>${m.type==='rich'?'📄':'🌳'}</span><span class="memo-title">${m.pin?'📌':''}${esc(m.title)}</span>`;
-    li.onclick=()=>op(m.id);
-    li.oncontextmenu=(e)=>{e.preventDefault();ctx={id:m.id,type:'memo'};shwCm(e);}
-    li.ondragstart=(e)=>{drg={id:m.id,type:'memo'};e.dataTransfer.effectAllowed='move';}
-    return li;
-}
-function shwCm(e){
-    // スマホでの右クリック（長押し）対応: 画面端で見切れないように調整
-    let x=e.pageX, y=e.pageY;
-    if(x+180 > window.innerWidth) x = window.innerWidth - 190;
-    E.cm.style.display='block'; E.cm.style.left=x+'px'; E.cm.style.top=y+'px';
-}
-
-document.addEventListener('click',()=>E.cm.style.display='none');
-document.getElementById('search-box').oninput=(e)=>{srch=e.target.value;rd();}
-document.getElementById('cm-ren').onclick=()=>{const t=ctx.type==='memo'?D.memos.find(x=>x.id===ctx.id):D.folders.find(x=>x.id===ctx.id);const n=prompt('名前:',t.title||t.name);if(n){if(ctx.type==='memo')t.title=n;else t.name=n;sv();rd();}}
-document.getElementById('cm-pin').onclick=()=>{const m=D.memos.find(x=>x.id===ctx.id);if(m){m.pin=!m.pin;sv();rd();}}
-document.getElementById('cm-del').onclick=()=>{if(ctx.type==='memo')dm(ctx.id);else df(ctx.id);}
+document.onclick=(e)=>{if(!e.target.closest('#cm')&&!e.target.closest('.memo-item')&&!e.target.closest('.folder-head'))E.cm.style.display='none';};
+document.getElementById('menu-btn').onclick=()=>tm(true); E.ov.onclick=()=>tm(false);
+document.getElementById('search').oninput=(e)=>{srch=e.target.value;rd();}
+document.getElementById('cm-ren').onclick=()=>{const t=ctx.type==='memo'?D.memos.find(x=>x.id===ctx.id):D.folders.find(x=>x.id===ctx.id);const n=prompt('名前:',t.title||t.name);if(n){if(ctx.type==='memo')t.title=n;else t.name=n;sv();rd();E.cm.style.display='none';}}
+document.getElementById('cm-pin').onclick=()=>{const m=D.memos.find(x=>x.id===ctx.id);if(m){m.pin=!m.pin;sv();rd();}E.cm.style.display='none';}
+document.getElementById('cm-del').onclick=()=>{if(ctx.type==='memo')dm(ctx.id);else df(ctx.id);E.cm.style.display='none';}
 document.getElementById('bn-rich').onclick=()=>cm('rich'); document.getElementById('bn-out').onclick=()=>cm('outline'); document.getElementById('bn-fol').onclick=cf;
 document.getElementById('b-thm').onclick=()=>{D.cfg.th=D.cfg.th==='dark'?'light':'dark';ac();sv();}
 document.getElementById('sz').oninput=(e)=>{D.cfg.fs=e.target.value;ac();sv();}
-document.getElementById('b-bkp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:'application/json'}));a.download='memo.json';a.click();}
+document.getElementById('b-bkp').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(D)],{type:'application/json'}));a.download='miMemo.json';a.click();}
 document.getElementById('b-rst').onclick=()=>document.getElementById('rst-file').click();
 document.getElementById('rst-file').onchange=(e)=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=(ev)=>{try{D=JSON.parse(ev.target.result);sv();ld();alert('完了');}catch(e){alert('エラー');}};r.readAsText(f);}
 
 E.r.addEventListener('input',()=>{const m=D.memos.find(x=>x.id===D.cur);if(m&&m.type==='rich'){m.html=E.r.innerHTML;uc(E.r.innerText.replace(/\n/g,'').length);sv();}});
-E.r.addEventListener('paste',(e)=>{const it=(e.clipboardData||e.originalEvent.clipboardData).items;for(let i=0;i<it.length;i++){if(it[i].type.indexOf("image")===0){e.preventDefault();const r=new FileReader();r.onload=(ev)=>document.execCommand('insertImage',false,ev.target.result);r.readAsDataURL(it[i].getAsFile());return;}}});
-function ro(){const m=D.memos.find(x=>x.id===D.cur);if(!m||m.type!=='outline')return;E.o.innerHTML='';let sk=-1;m.nodes.forEach((n,i)=>{if(sk!==-1){if(n.level>sk)return;sk=-1;}const d=document.createElement('div');d.className='node'+(n.folded?' folded':'');d.style.paddingLeft=(n.level*20)+'px';d.innerHTML=`<div class="nb"><div class="bd"></div></div><textarea class="ni" rows="1"></textarea>`;d.querySelector('.nb').onclick=()=>{const nx=m.nodes[i+1];if(nx&&nx.level>n.level){n.folded=!n.folded;sv();ro();}};const inp=d.querySelector('.ni');inp.value=n.text;inp.oninput=()=>{n.text=inp.value;ah(inp);sv();uc(m.nodes.reduce((a,b)=>a+b.text.length,0));};inp.onkeydown=(e)=>hk(e,i,n,m);E.o.appendChild(d);ah(inp);if(n.folded)sk=n.level;});}
+function ro(){const m=D.memos.find(x=>x.id===D.cur);if(!m||m.type!=='outline')return;E.o.innerHTML='';let sk=-1;m.nodes.forEach((n,i)=>{if(sk!==-1){if(n.level>sk)return;sk=-1;}const d=document.createElement('div');d.className='node'+(n.folded?' folded':'');d.style.paddingLeft=(n.level*24)+'px';d.innerHTML=`<div class="nb"><div class="bd"></div></div><textarea class="ni" rows="1"></textarea>`;d.querySelector('.nb').onclick=()=>{const nx=m.nodes[i+1];if(nx&&nx.level>n.level){n.folded=!n.folded;sv();ro();}};
+    const inp=d.querySelector('.ni');inp.value=n.text;
+    inp.onfocus=()=>{curIdx=i;} // ★フォーカス位置を記憶
+    inp.oninput=()=>{n.text=inp.value;ah(inp);sv();uc(m.nodes.reduce((a,b)=>a+b.text.length,0));};
+    inp.addEventListener('beforeinput', (e) => hbi(e, i, n, m));
+    inp.onkeydown=(e)=>hk(e,i,n,m);
+    E.o.appendChild(d);ah(inp);if(n.folded)sk=n.level;});}
 function ah(e){e.style.height='auto';e.style.height=e.scrollHeight+'px';}
-function hk(e,i,n,m){if(e.key==='Enter'&&!e.ctrlKey&&!e.metaKey&&!e.isComposing){e.preventDefault();m.nodes.splice(i+1,0,{id:Date.now()+'',text:'',level:n.level,folded:false});sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[i+1]?.focus(),0);}if(e.key==='Backspace'&&e.target.selectionStart===0&&i>0){e.preventDefault();const p=m.nodes[i-1],l=p.text.length;p.text+=n.text;m.nodes.splice(i,1);sv();ro();setTimeout(()=>{const el=E.o.querySelectorAll('.ni')[i-1];el?.focus();el?.setSelectionRange(l,l);},0);}if(e.key==='Tab'){e.preventDefault();if(e.shiftKey){if(n.level>0)n.level--;}else{if(i>0&&n.level<=m.nodes[i-1].level)n.level++;}sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[i]?.focus(),0);}if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();const nx=m.nodes[i+1];if(nx&&nx.level>n.level){n.folded=!n.folded;sv();ro();}}}
-function ac(){document.documentElement.setAttribute('data-theme',D.cfg.th);E.r.style.fontSize=E.o.style.fontSize=D.cfg.fs+'px';}
+
+function hbi(e, i, n, m) {
+    if (e.inputType === 'insertParagraph' || e.inputType === 'insertLineBreak') {
+        e.preventDefault();
+        m.nodes.splice(i+1,0,{id:Date.now()+'',text:'',level:n.level,folded:false});
+        sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[i+1]?.focus(),0);
+    }
+    if (e.inputType === 'deleteContentBackward' && e.target.selectionStart === 0 && i > 0) {
+        e.preventDefault();
+        const p=m.nodes[i-1],l=p.text.length;p.text+=n.text;m.nodes.splice(i,1);
+        sv();ro();setTimeout(()=>{const el=E.o.querySelectorAll('.ni')[i-1];el?.focus();el?.setSelectionRange(l,l);},0);
+    }
+}
+function hk(e,i,n,m){
+    if(e.key==='Tab'){e.preventDefault();if(e.shiftKey){if(n.level>0)n.level--;}else{if(i>0&&n.level<=m.nodes[i-1].level)n.level++;}sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[i]?.focus(),0);}
+    if((e.ctrlKey||e.metaKey)&&e.key==='Enter'){e.preventDefault();const nx=m.nodes[i+1];if(nx&&nx.level>n.level){n.folded=!n.folded;sv();ro();}}
+}
+
+// ★スマホ用ボタン動作修正
+document.getElementById('mb-enter').onclick=(e)=>{e.preventDefault(); if(curIdx!==-1) hbi({inputType:'insertParagraph',preventDefault:()=>{}}, curIdx, D.memos.find(x=>x.id===D.cur).nodes[curIdx], D.memos.find(x=>x.id===D.cur));};
+document.getElementById('mb-right').onclick=(e)=>{e.preventDefault();if(curIdx!==-1){const m=D.memos.find(x=>x.id===D.cur),n=m.nodes[curIdx];if(curIdx>0&&n.level<=m.nodes[curIdx-1].level)n.level++;sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[curIdx]?.focus(),0);}};
+document.getElementById('mb-left').onclick=(e)=>{e.preventDefault();if(curIdx!==-1){const m=D.memos.find(x=>x.id===D.cur),n=m.nodes[curIdx];if(n.level>0)n.level--;sv();ro();setTimeout(()=>E.o.querySelectorAll('.ni')[curIdx]?.focus(),0);}};
+
+function ac(){document.documentElement.setAttribute('data-theme',D.cfg.th);E.r.style.fontSize=E.o.style.fontSize=D.cfg.fs+'px';E.szv.textContent=D.cfg.fs+'px';}
 function esc(s){return s.replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
 ld();
 </script>
