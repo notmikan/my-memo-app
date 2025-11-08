@@ -18,11 +18,11 @@
     #list { flex:1; overflow-y:auto; -webkit-overflow-scrolling:touch; }
 
     #main { flex:1; display:flex; flex-direction:column; background:var(--bg); min-width:0; position:relative; }
+    /* スマホ用タイトルバー */
+    #mobile-header { display:none; padding:8px; text-align:center; font-weight:bold; border-bottom:1px solid var(--bd); font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; background:var(--bg-side); }
     #toolbar { padding:10px; border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:10px; overflow-x:auto; white-space:nowrap; min-height:50px; }
     #toolbar::-webkit-scrollbar { display:none; }
     #menu-btn { display:none; font-size:20px; border:none; background:transparent; }
-    /* スマホ用タイトル表示 */
-    #mobile-title { display:none; flex:1; text-align:center; font-weight:bold; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:14px; }
 
     #editor { flex:1; position:relative; overflow:hidden; }
     .view { width:100%; height:100%; overflow-y:auto; display:none; outline:none; padding:30px 5% 80px; -webkit-overflow-scrolling:touch; }
@@ -36,27 +36,26 @@
     .node.folded .bd { width:0; height:0; background:none; border-left:8px solid var(--txt-sub); border-top:5px solid transparent; border-bottom:5px solid transparent; border-radius:0; }
     .ni { flex:1; min-height:1.5em; outline:none; border:none; background:transparent; color:var(--txt); resize:none; font-size:inherit; line-height:1.5; padding:0; }
 
-    /* スマホ用補助ボタン（右上固定） */
     #mobile-btns { display:none; position:absolute; top:60px; right:10px; flex-direction:column; gap:8px; z-index:50; }
     .mob-btn { width:36px; height:36px; background:var(--bg); color:var(--txt); border:1px solid var(--bd); border-radius:50%; box-shadow:0 2px 5px rgba(0,0,0,0.1); font-size:16px; display:flex; align-items:center; justify-content:center; opacity:0.7; }
     .mob-btn:active { opacity:1; background:var(--bg-act); }
 
     @media (max-width: 768px) {
         #menu-btn { display:block; }
-        #mobile-title { display:block; } /* スマホ時のみタイトル表示 */
+        #mobile-header { display:block; } /* スマホ用タイトルバー表示 */
         #sidebar { position:fixed; top:0; left:0; height:100%; width:80%; max-width:300px; transform:translateX(-100%); box-shadow:2px 0 10px rgba(0,0,0,0.2); }
         #sidebar.show { transform:translateX(0); }
         #overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:var(--overlay); z-index:15; opacity:0; pointer-events:none; transition:opacity .3s; }
         #overlay.show { opacity:1; pointer-events:auto; }
         #mobile-btns.show { display:flex; }
-        /* ツールバーの要素を少し整理 */
         #toolbar .pc-only { display:none; }
     }
 
     .folder-head { padding:10px; font-weight:bold; display:flex; align-items:center; gap:5px; color:var(--txt-sub); cursor:pointer; }
-    .memo-item { padding:12px 5px 12px 15px; border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:8px; color:var(--txt-sub); cursor:pointer; }
+    .memo-item { padding:12px 5px 12px 15px; border-bottom:1px solid var(--bd); display:flex; align-items:center; gap:8px; color:var(--txt-sub); cursor:pointer; touch-action:none; /* スマホでのスクロール干渉を防ぐ */ }
     .memo-item.active { background:var(--bg-act); color:var(--txt); font-weight:bold; }
     .memo-item.pinned { border-left:4px solid var(--pin); background:var(--bg-hover); }
+    .memo-item.dragging { opacity:0.5; background:var(--bg-act); transform:scale(1.02); box-shadow:0 5px 15px rgba(0,0,0,0.2); } /* ドラッグ中の見た目 */
     .memo-title { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .menu-trigger { padding:4px 8px; font-size:16px; color:var(--txt-sub); cursor:pointer; }
     
@@ -74,9 +73,9 @@
     <div id="list"></div>
 </nav>
 <main id="main">
+    <div id="mobile-header"></div>
     <div id="toolbar">
         <button id="menu-btn">☰</button>
-        <span id="mobile-title"></span>
         <div class="pc-only" style="display:flex; align-items:center; gap:5px;"><span style="font-size:12px">文字:</span><input type="range" id="sz" min="1" max="50" value="16" style="width:60px"><span id="szv" style="font-size:12px; min-width:35px">16px</span></div>
         <span id="cc" class="pc-only" style="font-size:12px; color:var(--txt-sub); min-width:50px">0文字</span>
         <div style="flex:1" class="pc-only"></div>
@@ -95,8 +94,8 @@
 <div id="cm"><div class="ci" id="cm-ren">✏️ 名前変更</div><div class="ci" id="cm-pin">📌 ピン留め</div><div style="height:1px;background:var(--bd);margin:5px 0"></div><div class="ci" id="cm-del" style="color:var(--danger)">🗑️ 削除</div></div>
 
 <script>
-let D={memos:[],folders:[{id:'f1',name:'メイン',folded:false}],cur:null,cfg:{fs:16,th:'light'}}, ctx={id:null,type:null}, srch='', curIdx=-1;
-const KEY='mi_memo_data', E={r:document.getElementById('rich'),o:document.getElementById('out'),l:document.getElementById('list'),cm:document.getElementById('cm'),cc:document.getElementById('cc'),sb:document.getElementById('sidebar'),ov:document.getElementById('overlay'),mb:document.getElementById('mobile-btns'),szv:document.getElementById('szv'),mt:document.getElementById('mobile-title')};
+let D={memos:[],folders:[{id:'f1',name:'メイン',folded:false}],cur:null,cfg:{fs:16,th:'light'}}, ctx={id:null,type:null}, srch='', curIdx=-1, touchTimer=null;
+const KEY='mi_memo_data', E={r:document.getElementById('rich'),o:document.getElementById('out'),l:document.getElementById('list'),cm:document.getElementById('cm'),cc:document.getElementById('cc'),sb:document.getElementById('sidebar'),ov:document.getElementById('overlay'),mb:document.getElementById('mobile-btns'),szv:document.getElementById('szv'),mh:document.getElementById('mobile-header')};
 function sv(){try{localStorage.setItem(KEY,JSON.stringify(D));}catch(e){alert('容量オーバー');}}
 function ld(){const d=localStorage.getItem(KEY);if(d){D=JSON.parse(d);if(!D.folders)D.folders=[{id:'f1',name:'メイン',folded:false}];D.memos.forEach(m=>{if(!m.fid)m.fid='f1';});}else{cm('rich',true);}rd();op(D.cur||D.memos[0]?.id);ac();}
 function tm(show){const is=show!==undefined?show:!E.sb.classList.contains('show');E.sb.classList.toggle('show',is);E.ov.classList.toggle('show',is);}
@@ -105,8 +104,8 @@ function cm(t,ini=false){const id=Date.now(),fid=D.folders.find(f=>!f.folded)?.i
 function cf(){const n=prompt('フォルダ名:');if(n){D.folders.push({id:'f'+Date.now(),name:n,folded:false});sv();rd();}}
 function dm(id){if(!confirm('削除OK？'))return;D.memos=D.memos.filter(m=>m.id!==id);if(D.cur===id)op(D.memos[0]?.id);sv();rd();}
 function df(id){if(D.folders.length<=1)return;if(!confirm('フォルダを削除しますか？'))return;D.memos=D.memos.filter(m=>m.fid!==id);D.folders=D.folders.filter(f=>f.id!==id);if(!D.memos.find(m=>m.id===D.cur))op(D.memos[0]?.id);sv();rd();}
-function op(id){D.cur=id;const m=D.memos.find(x=>x.id===id);if(!m){E.r.classList.remove('active');E.o.classList.remove('active');uc(0);E.mt.textContent='';return;}
-    E.mt.textContent=m.title; // スマホ用タイトル更新
+function op(id){D.cur=id;const m=D.memos.find(x=>x.id===id);if(!m){E.r.classList.remove('active');E.o.classList.remove('active');uc(0);E.mh.textContent='';return;}
+    E.mh.textContent=m.title;
     if(m.type==='rich'){E.r.classList.add('active');E.o.classList.remove('active');E.mb.classList.remove('show');E.r.innerHTML=m.html||'';uc(E.r.innerText.replace(/\n/g,'').length);}
     else{E.r.classList.remove('active');E.o.classList.add('active');E.mb.classList.add('show');ro();uc(m.nodes.reduce((a,b)=>a+b.text.length,0));}
     if(window.innerWidth<=768)tm(false); rd();}
@@ -116,20 +115,80 @@ function rd(){E.l.innerHTML='';
     if(srch){D.memos.filter(m=>(m.title+m.html+(m.nodes?m.nodes.map(n=>n.text).join(' '):'')).toLowerCase().includes(srch.toLowerCase())).forEach(m=>E.l.appendChild(rm(m)));}
     else{D.folders.forEach(f=>{
         const fd=document.createElement('div');
-        fd.innerHTML=`<div class="folder-head"><span>${f.folded?'▶':'▼'}</span>📁 ${esc(f.name)} <span class="menu-trigger">︙</span></div>`;
+        fd.innerHTML=`<div class="folder-head" data-fid="${f.id}"><span>${f.folded?'▶':'▼'}</span>📁 ${esc(f.name)} <span class="menu-trigger">︙</span></div>`;
         const fh=fd.querySelector('.folder-head');
         fh.onclick=(e)=>{if(!e.target.classList.contains('menu-trigger')){f.folded=!f.folded;sv();rd();}};
         fh.querySelector('.menu-trigger').onclick=(e)=>{e.stopPropagation();ctx={id:f.id,type:'folder'};shwCm(e);};
+        fh.oncontextmenu=(e)=>{e.preventDefault();ctx={id:f.id,type:'folder'};shwCm(e);};
+        // PC D&D
+        fh.ondragover=(e)=>{e.preventDefault();e.dataTransfer.dropEffect='move';fh.style.background='var(--bg-act)';}
+        fh.ondragleave=()=>{fh.style.background='';}
+        fh.ondrop=(e)=>{e.preventDefault();fh.style.background='';if(window.drgPC){const m=D.memos.find(x=>x.id===window.drgPC);m.fid=f.id;sv();rd();window.drgPC=null;}}
+        
         if(!f.folded){D.memos.filter(m=>m.fid===f.id).sort((a,b)=>b.pin-a.pin).forEach(m=>fd.appendChild(rm(m)));}
         E.l.appendChild(fd);
     });}
 }
-function rm(m){const li=document.createElement('div');li.className=`memo-item ${m.id===D.cur?'active':''} ${m.pin?'pinned':''}`;
+function rm(m){const li=document.createElement('div');li.className=`memo-item ${m.id===D.cur?'active':''} ${m.pin?'pinned':''}`; li.dataset.id=m.id;
     li.innerHTML=`<span>${m.type==='rich'?'📄':'🌳'}</span><span class="memo-title">${m.pin?'📌':''}${esc(m.title)}</span><span class="menu-trigger">︙</span>`;
     li.onclick=(e)=>{if(!e.target.classList.contains('menu-trigger'))op(m.id);};
     li.querySelector('.menu-trigger').onclick=(e)=>{e.stopPropagation();ctx={id:m.id,type:'memo'};shwCm(e);};
-    return li;}
-function shwCm(e){let x=e.clientX!==undefined?e.clientX:e.pageX, y=e.clientY!==undefined?e.clientY:e.pageY;if(x+180>window.innerWidth)x=window.innerWidth-190;if(y+150>window.innerHeight)y=window.innerHeight-160;E.cm.style.display='block';E.cm.style.left=x+'px';E.cm.style.top=y+'px';}
+    li.oncontextmenu=(e)=>{e.preventDefault();ctx={id:m.id,type:'memo'};shwCm(e);};
+    
+    // PC D&D
+    li.draggable=true;
+    li.ondragstart=(e)=>{window.drgPC=m.id;e.dataTransfer.effectAllowed='move';li.classList.add('dragging');}
+    li.ondragend=(e)=>{li.classList.remove('dragging');}
+
+    // スマホ用タッチイベント（長押しで移動モード）
+    let touchX, touchY, dragEl=null;
+    li.ontouchstart=(e)=>{
+        touchX=e.touches[0].clientX; touchY=e.touches[0].clientY;
+        touchTimer=setTimeout(()=>{
+            dragEl=li.cloneNode(true); dragEl.classList.add('dragging');
+            dragEl.style.position='fixed'; dragEl.style.width=li.offsetWidth+'px'; dragEl.style.zIndex='9999';
+            document.body.appendChild(dragEl); li.style.opacity='0.5';
+            navigator.vibrate?.(50); // バイブレーションで合図
+        }, 500); // 0.5秒長押し
+    };
+    li.ontouchmove=(e)=>{
+        if(dragEl){
+            e.preventDefault();
+            const tx=e.touches[0].clientX, ty=e.touches[0].clientY;
+            dragEl.style.left=(tx-20)+'px'; dragEl.style.top=(ty-20)+'px';
+            // ドロップ対象のハイライト
+            const target=document.elementFromPoint(tx,ty);
+            document.querySelectorAll('.folder-head, .memo-item').forEach(el=>el.style.background='');
+            if(target){const t=target.closest('.folder-head')||target.closest('.memo-item'); if(t)t.style.background='var(--bg-act)';}
+        }else if(Math.abs(e.touches[0].clientX-touchX)>10 || Math.abs(e.touches[0].clientY-touchY)>10){
+            clearTimeout(touchTimer); // 指が動いたら長押しキャンセル
+        }
+    };
+    li.ontouchend=(e)=>{
+        clearTimeout(touchTimer);
+        if(dragEl){
+            dragEl.remove(); li.style.opacity='1';
+            const target=document.elementFromPoint(e.changedTouches[0].clientX,e.changedTouches[0].clientY);
+            document.querySelectorAll('.folder-head, .memo-item').forEach(el=>el.style.background='');
+            if(target){
+                const fTgt=target.closest('.folder-head'), mTgt=target.closest('.memo-item');
+                if(fTgt){ // フォルダにドロップ
+                    const fid=fTgt.dataset.fid; if(fid&&m.fid!==fid){m.fid=fid;sv();rd();}
+                }else if(mTgt){ // メモにドロップ（並び替え）
+                    const tid=Number(mTgt.dataset.id);
+                    if(tid!==m.id){
+                        const fIdx=D.memos.findIndex(x=>x.id===m.id), tIdx=D.memos.findIndex(x=>x.id===tid);
+                        const [mv]=D.memos.splice(fIdx,1); D.memos.splice(tIdx,0,mv);
+                        const tMemo=D.memos.find(x=>x.id===tid); if(mv.pin!==tMemo.pin)mv.pin=tMemo.pin;
+                        mv.fid=tMemo.fid; sv();rd();
+                    }
+                }
+            }
+        }
+    };
+    return li;
+}
+function shwCm(e){let x=e.clientX||e.pageX,y=e.clientY||e.pageY;if(x+180>window.innerWidth)x=window.innerWidth-190;if(y+150>window.innerHeight)y=window.innerHeight-160;E.cm.style.display='block';E.cm.style.left=x+'px';E.cm.style.top=y+'px';}
 
 document.onclick=(e)=>{if(!e.target.closest('#cm')&&!e.target.classList.contains('menu-trigger'))E.cm.style.display='none';};
 document.getElementById('menu-btn').onclick=()=>tm(true); E.ov.onclick=()=>tm(false);
